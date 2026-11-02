@@ -21,6 +21,7 @@
 package spotlight
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/crowdstrike/falcon-cli/pkg/cmdutil"
@@ -131,6 +132,17 @@ func NewCmdVulnerabilitiesList(f *factory.Factory) *cobra.Command {
             falcon spotlight vulnerabilities list --output json
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
+			// The Spotlight combined endpoint rejects an empty filter with a
+			// raw 400 ("filter is required"). Fail fast with an actionable
+			// message instead of surfacing the API error.
+			if opts.filter == "" {
+				return fmt.Errorf("a --filter is required for spotlight vulnerabilities\n" +
+					"  the Spotlight API does not allow listing all vulnerabilities unscoped; examples:\n" +
+					"    --filter \"status:'open'\"\n" +
+					"    --filter \"status:'open'+cve.severity:'CRITICAL'\"\n" +
+					"    --filter \"cve.is_cisa_kev:true\"")
+			}
+
 			falconClient, err := f.FalconClient()
 			if err != nil {
 				return err

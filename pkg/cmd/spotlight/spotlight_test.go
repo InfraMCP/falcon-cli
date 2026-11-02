@@ -66,3 +66,20 @@ func TestNewSpotlightCmd_Wiring(t *testing.T) {
 	cmd := NewSpotlightCmd(&factory.Factory{})
 	testutil.AssertHasSubcommands(t, testutil.SubcommandNames(cmd), []string{"vulnerabilities"})
 }
+
+func TestVulnerabilitiesList_RequiresFilter(t *testing.T) {
+	// Without --filter the command must fail fast with a helpful message and
+	// never reach the API (so a nil FalconClient is never called).
+	f, buf := testutil.FactoryWithBuffer()
+	root := NewSpotlightCmd(f)
+	root.SetArgs([]string{"vulnerabilities", "list"})
+	root.SetOut(buf)
+	root.SetErr(buf)
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected an error when --filter is omitted, got nil")
+	}
+	if !testutil.ContainsAll(err.Error(), "filter is required") {
+		t.Errorf("error should explain the filter requirement, got: %v", err)
+	}
+}
