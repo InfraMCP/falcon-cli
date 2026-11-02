@@ -22,6 +22,7 @@ package fcs
 
 import (
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/assets"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/cloudgroups"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/compliance"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/groups"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/iac"
@@ -53,6 +54,7 @@ func NewFCSCmd(f *factory.Factory) *cobra.Command {
 		compliance.NewComplianceCmd(f),
 		suppression.NewSuppressionCmd(f),
 		groups.NewGroupsCmd(f),
+		cloudgroups.NewCloudGroupsCmd(f),
 		kubernetes.NewKubernetesCmd(f),
 		vulnerabilities.NewVulnerabilitiesCmd(f),
 		iac.NewIACCmd(f),
