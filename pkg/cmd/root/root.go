@@ -25,7 +25,14 @@ import (
 
 	"github.com/crowdstrike/falcon-cli/internal/version"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/auth"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/detections"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/hosts"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/intel"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/ioc"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/netscan"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/rtr"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/spotlight"
 	versionCmd "github.com/crowdstrike/falcon-cli/pkg/cmd/version"
 	"github.com/crowdstrike/falcon-cli/pkg/config"
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
@@ -86,6 +93,13 @@ func NewCmdRoot(f *factory.Factory, _ string) *cobra.Command {
 	cmd.AddCommand(versionCmd.NewCmdVersion(f))
 	cmd.AddCommand(auth.NewAuthCmd(f))
 	cmd.AddCommand(fcs.NewFCSCmd(f))
+	cmd.AddCommand(hosts.NewHostsCmd(f))
+	cmd.AddCommand(detections.NewDetectionsCmd(f))
+	cmd.AddCommand(intel.NewIntelCmd(f))
+	cmd.AddCommand(ioc.NewIOCCmd(f))
+	cmd.AddCommand(spotlight.NewSpotlightCmd(f))
+	cmd.AddCommand(rtr.NewRTRCmd(f))
+	cmd.AddCommand(netscan.NewNetscanCmd(f))
 
 	utils.DisableAuthCheck(cmd)
 
