@@ -30,6 +30,7 @@ package netscan
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"strconv"
 
@@ -99,7 +100,7 @@ func rawRequestWithClient(c *client.CrowdStrikeAPISpecification, opName string, 
 			return nil, runtime.NewAPIError(opName, errResponse{resp: resp, payload: payload}, code)
 		}
 		out := map[string]interface{}{}
-		if err := consumer.Consume(resp.Body(), &out); err != nil && err != io.EOF {
+		if err := consumer.Consume(resp.Body(), &out); err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
 		return out, nil

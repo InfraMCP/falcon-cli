@@ -45,11 +45,7 @@ var reportTableDef = &output.TableDefinition{
 			id = strconv.FormatInt(*r.ID, 10)
 		}
 
-		return []string{
-			id,
-			cmdutil.Deref(r.Name),
-			cmdutil.Deref(r.Slug),
-		}
+		return []string{id, cmdutil.Deref(r.Name), cmdutil.Deref(r.Slug)}
 	},
 }
 
@@ -65,74 +61,42 @@ func newReportsCmd(f *factory.Factory) *cobra.Command {
         `),
 	}
 
-	cmd.AddCommand(newReportsListCmd(f))
-	return cmd
-}
-
-type reportsListOptions struct {
-	Factory *factory.Factory
-	filter  string
-	sort    string
-	limit   int64
-	offset  int64
-	out     string
-	Table   cmdutil.TableFormattingOptions
-	Client  cmdutil.ClientFilterOptions
-}
-
-// newReportsListCmd lists intel reports matching an optional FQL filter.
-func newReportsListCmd(f *factory.Factory) *cobra.Command {
-	opts := &reportsListOptions{Factory: f, limit: 100}
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List finished intelligence reports",
-		Long: templates.LongDesc(`List CrowdStrike finished intelligence reports.
+	cmd.AddCommand(newListCmd(
+		f,
+		"List finished intelligence reports",
+		templates.LongDesc(`List CrowdStrike finished intelligence reports.
 
             Returns full report entities in a single call, so the table shows the
             report ID, name and slug.`),
-		Example: templates.Examples(`
+		templates.Examples(`
             # List all intel reports
             falcon intel reports list
 
             # Filter by name, as JSON
             falcon intel reports list --filter "name:*'*ransomware*'" --output json
         `),
-		RunE: func(_ *cobra.Command, _ []string) error {
+		reportTableDef,
+		func(o *listOptions) ([]*models.DomainNewsDocument, error) {
 			falconClient, err := f.FalconClient()
 			if err != nil {
-				return err
+				return nil, err
 			}
-
 			qp := intel.NewQueryIntelReportEntitiesParams()
-			qp.Filter = cmdutil.StringPtr(opts.filter)
-			qp.Sort = cmdutil.StringPtr(opts.sort)
-			qp.Limit = &opts.limit
-			if opts.offset > 0 {
-				qp.Offset = &opts.offset
+			qp.Filter = cmdutil.StringPtr(o.filter)
+			qp.Sort = cmdutil.StringPtr(o.sort)
+			qp.Limit = &o.limit
+			if o.offset > 0 {
+				qp.Offset = &o.offset
 			}
-
 			resp, err := falconClient.Intel.QueryIntelReportEntities(qp)
 			if err != nil {
-				return cmdutil.HandleAPIError(err, "QueryIntelReportEntities")
+				return nil, cmdutil.HandleAPIError(err, "QueryIntelReportEntities")
 			}
-
-			tableOpts := opts.Table.ToOutputTableOptions()
-			printer := output.NewPrinter(output.Format(opts.out), reportTableDef, tableOpts)
-
 			if resp.Payload == nil {
-				return printer.Print(f.IOStreams.Out, []*models.DomainNewsDocument{})
+				return []*models.DomainNewsDocument{}, nil
 			}
-			resources := output.FilterAndSort(resp.Payload.Resources, reportTableDef, opts.Client.ToFilterOptions())
-			return printer.Print(f.IOStreams.Out, resources)
+			return resp.Payload.Resources, nil
 		},
-	}
-
-	cmdutil.AddFilterFlag(cmd, &opts.filter)
-	cmdutil.AddSortFlag(cmd, &opts.sort)
-	cmdutil.AddPaginationFlags(cmd, &opts.limit, &opts.offset, 100)
-	cmdutil.AddOutputFlag(cmd, &opts.out)
-	cmdutil.AddTableFormattingFlags(cmd, &opts.Table)
-	cmdutil.AddClientFilterFlags(cmd, &opts.Client)
+	))
 	return cmd
 }

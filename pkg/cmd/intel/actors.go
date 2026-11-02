@@ -50,12 +50,7 @@ var actorTableDef = &output.TableDefinition{
 			lastActivity = strconv.FormatInt(*r.LastActivityDate, 10)
 		}
 
-		return []string{
-			id,
-			r.Name,
-			r.Slug,
-			lastActivity,
-		}
+		return []string{id, r.Name, r.Slug, lastActivity}
 	},
 }
 
@@ -71,74 +66,42 @@ func newActorsCmd(f *factory.Factory) *cobra.Command {
         `),
 	}
 
-	cmd.AddCommand(newActorsListCmd(f))
-	return cmd
-}
-
-type actorsListOptions struct {
-	Factory *factory.Factory
-	filter  string
-	sort    string
-	limit   int64
-	offset  int64
-	out     string
-	Table   cmdutil.TableFormattingOptions
-	Client  cmdutil.ClientFilterOptions
-}
-
-// newActorsListCmd lists intel actors matching an optional FQL filter.
-func newActorsListCmd(f *factory.Factory) *cobra.Command {
-	opts := &actorsListOptions{Factory: f, limit: 100}
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List intel actors (adversaries)",
-		Long: templates.LongDesc(`List CrowdStrike threat intelligence actors (adversaries).
+	cmd.AddCommand(newListCmd(
+		f,
+		"List intel actors (adversaries)",
+		templates.LongDesc(`List CrowdStrike threat intelligence actors (adversaries).
 
             Returns full actor entities in a single call, so the table shows the
             actor ID, name, slug and last-activity date.`),
-		Example: templates.Examples(`
+		templates.Examples(`
             # List all intel actors
             falcon intel actors list
 
             # Filter by name, as JSON
             falcon intel actors list --filter "name:*'*PANDA*'" --output json
         `),
-		RunE: func(_ *cobra.Command, _ []string) error {
+		actorTableDef,
+		func(o *listOptions) ([]*models.ActorActorDocument, error) {
 			falconClient, err := f.FalconClient()
 			if err != nil {
-				return err
+				return nil, err
 			}
-
 			qp := intel.NewQueryIntelActorEntitiesParams()
-			qp.Filter = cmdutil.StringPtr(opts.filter)
-			qp.Sort = cmdutil.StringPtr(opts.sort)
-			qp.Limit = &opts.limit
-			if opts.offset > 0 {
-				qp.Offset = &opts.offset
+			qp.Filter = cmdutil.StringPtr(o.filter)
+			qp.Sort = cmdutil.StringPtr(o.sort)
+			qp.Limit = &o.limit
+			if o.offset > 0 {
+				qp.Offset = &o.offset
 			}
-
 			resp, err := falconClient.Intel.QueryIntelActorEntities(qp)
 			if err != nil {
-				return cmdutil.HandleAPIError(err, "QueryIntelActorEntities")
+				return nil, cmdutil.HandleAPIError(err, "QueryIntelActorEntities")
 			}
-
-			tableOpts := opts.Table.ToOutputTableOptions()
-			printer := output.NewPrinter(output.Format(opts.out), actorTableDef, tableOpts)
-
 			if resp.Payload == nil {
-				return printer.Print(f.IOStreams.Out, []*models.ActorActorDocument{})
+				return []*models.ActorActorDocument{}, nil
 			}
-			resources := output.FilterAndSort(resp.Payload.Resources, actorTableDef, opts.Client.ToFilterOptions())
-			return printer.Print(f.IOStreams.Out, resources)
+			return resp.Payload.Resources, nil
 		},
-	}
-
-	cmdutil.AddFilterFlag(cmd, &opts.filter)
-	cmdutil.AddSortFlag(cmd, &opts.sort)
-	cmdutil.AddPaginationFlags(cmd, &opts.limit, &opts.offset, 100)
-	cmdutil.AddOutputFlag(cmd, &opts.out)
-	cmdutil.AddTableFormattingFlags(cmd, &opts.Table)
-	cmdutil.AddClientFilterFlags(cmd, &opts.Client)
+	))
 	return cmd
 }

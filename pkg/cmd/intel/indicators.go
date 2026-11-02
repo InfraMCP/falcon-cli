@@ -57,74 +57,42 @@ func newIndicatorsCmd(f *factory.Factory) *cobra.Command {
         `),
 	}
 
-	cmd.AddCommand(newIndicatorsListCmd(f))
-	return cmd
-}
-
-type indicatorsListOptions struct {
-	Factory *factory.Factory
-	filter  string
-	sort    string
-	limit   int64
-	offset  int64
-	out     string
-	Table   cmdutil.TableFormattingOptions
-	Client  cmdutil.ClientFilterOptions
-}
-
-// newIndicatorsListCmd lists intel indicators matching an optional FQL filter.
-func newIndicatorsListCmd(f *factory.Factory) *cobra.Command {
-	opts := &indicatorsListOptions{Factory: f, limit: 100}
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List intel indicators of compromise (IOCs)",
-		Long: templates.LongDesc(`List CrowdStrike threat intelligence indicators of compromise.
+	cmd.AddCommand(newListCmd(
+		f,
+		"List intel indicators of compromise (IOCs)",
+		templates.LongDesc(`List CrowdStrike threat intelligence indicators of compromise.
 
             Returns full indicator entities in a single call, so the table shows
             the indicator ID, value and type.`),
-		Example: templates.Examples(`
+		templates.Examples(`
             # List all intel indicators
             falcon intel indicators list
 
             # Domain indicators only, as JSON
             falcon intel indicators list --filter "type:'domain'" --output json
         `),
-		RunE: func(_ *cobra.Command, _ []string) error {
+		indicatorTableDef,
+		func(o *listOptions) ([]*models.DomainPublicIndicatorV3, error) {
 			falconClient, err := f.FalconClient()
 			if err != nil {
-				return err
+				return nil, err
 			}
-
 			qp := intel.NewQueryIntelIndicatorEntitiesParams()
-			qp.Filter = cmdutil.StringPtr(opts.filter)
-			qp.Sort = cmdutil.StringPtr(opts.sort)
-			qp.Limit = &opts.limit
-			if opts.offset > 0 {
-				qp.Offset = &opts.offset
+			qp.Filter = cmdutil.StringPtr(o.filter)
+			qp.Sort = cmdutil.StringPtr(o.sort)
+			qp.Limit = &o.limit
+			if o.offset > 0 {
+				qp.Offset = &o.offset
 			}
-
 			resp, err := falconClient.Intel.QueryIntelIndicatorEntities(qp)
 			if err != nil {
-				return cmdutil.HandleAPIError(err, "QueryIntelIndicatorEntities")
+				return nil, cmdutil.HandleAPIError(err, "QueryIntelIndicatorEntities")
 			}
-
-			tableOpts := opts.Table.ToOutputTableOptions()
-			printer := output.NewPrinter(output.Format(opts.out), indicatorTableDef, tableOpts)
-
 			if resp.Payload == nil {
-				return printer.Print(f.IOStreams.Out, []*models.DomainPublicIndicatorV3{})
+				return []*models.DomainPublicIndicatorV3{}, nil
 			}
-			resources := output.FilterAndSort(resp.Payload.Resources, indicatorTableDef, opts.Client.ToFilterOptions())
-			return printer.Print(f.IOStreams.Out, resources)
+			return resp.Payload.Resources, nil
 		},
-	}
-
-	cmdutil.AddFilterFlag(cmd, &opts.filter)
-	cmdutil.AddSortFlag(cmd, &opts.sort)
-	cmdutil.AddPaginationFlags(cmd, &opts.limit, &opts.offset, 100)
-	cmdutil.AddOutputFlag(cmd, &opts.out)
-	cmdutil.AddTableFormattingFlags(cmd, &opts.Table)
-	cmdutil.AddClientFilterFlags(cmd, &opts.Client)
+	))
 	return cmd
 }
