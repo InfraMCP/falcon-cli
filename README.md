@@ -15,6 +15,30 @@ The CLI requires a CrowdStrike API client with appropriate scopes for the comman
 > [!NOTE]
 > Run `falcon fcs doctor` to check which scopes your API client currently has and which commands are available.
 
+### Scopes by command group
+
+| Command group | Required scope(s) |
+| --- | --- |
+| `hosts` | Hosts: Read (and Write for `contain` / `hide`) |
+| `detections` | Alerts: Read (and Write to update status) |
+| `intel` | Actors (Falcon Intelligence): Read; Indicators: Read; Reports: Read |
+| `ioc` | IOC Manager / Indicators (IOCs): Read (and Write for `create` / `delete`) |
+| `spotlight` | Vulnerabilities (Spotlight): Read |
+| `rtr` | Real Time Response: Read |
+| `netscan` | Network Vulnerability Assessment: Read (and Write for create/update/delete) |
+| `fcs cloud-groups` | Asset Groups: Read (and Write for create/update/delete) |
+
+> [!IMPORTANT]
+> The `rtr` command group needs the **Real Time Response** scope on your API
+> client. Without it, `rtr sessions list` returns `403 scope not permitted`.
+> Add the scope to your client under **Support and resources → API clients and
+> keys** in the Falcon console, then retry.
+
+> [!NOTE]
+> `spotlight vulnerabilities list` requires a `--filter` — the Spotlight API
+> does not allow listing all vulnerabilities unscoped (e.g.
+> `--filter "status:'open'"`).
+
 ## Usage
 
 See the full [command reference](docs/usage.md) for all commands, subcommands, and flags.
