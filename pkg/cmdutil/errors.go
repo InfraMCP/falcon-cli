@@ -130,11 +130,12 @@ func HandleAPIError(err error, operation string) error {
 		return nil
 	}
 
-	var apiErr *runtime.APIError
-	if !errors.As(err, &apiErr) {
-		// Not a typed API error — return as-is with operation context
+	code, ok := statusCode(err)
+	if !ok {
+		// Not an HTTP status error — return as-is with operation context
 		return fmt.Errorf("%s: %w", operation, err)
 	}
+	apiErr := &runtime.APIError{Code: code}
 
 	switch {
 	case apiErr.Code == 401:
@@ -169,11 +170,17 @@ func HandleAPIError(err error, operation string) error {
 		if feature, ok := featureRequirements[operation]; ok {
 			return fmt.Errorf("%s: feature not available (HTTP 404)\n  Requires: %s", operation, feature)
 		}
+		if msg := apiMessage(err); msg != "" {
+			return fmt.Errorf("%s: not found (HTTP 404) — %s", operation, msg)
+		}
 		return fmt.Errorf("%s: resource not found (HTTP 404)", operation)
 
 	case apiErr.Code == 400:
 		if hint, ok := filterHints[operation]; ok && strings.Contains(err.Error(), "{}") {
 			return fmt.Errorf("%s: invalid filter expression\n  Known filter fields: %s", operation, hint)
+		}
+		if msg := apiMessage(err); msg != "" {
+			return fmt.Errorf("%s: bad request (HTTP 400) — %s", operation, msg)
 		}
 		return fmt.Errorf("%s: bad request (HTTP 400) — %s", operation, FirstLine(err.Error()))
 
@@ -213,4 +220,31 @@ func FirstLine(s string) string {
 		}
 	}
 	return s
+}
+
+// statusCode extracts the HTTP status from a gofalcon error. Undocumented
+// statuses arrive as *runtime.APIError; documented ones arrive as generated
+// response types (e.g. GetPullJobNotFound) that expose Code().
+func statusCode(err error) (int, bool) {
+	var apiErr *runtime.APIError
+	if errors.As(err, &apiErr) {
+		return apiErr.Code, true
+	}
+	var coder interface{ Code() int }
+	if errors.As(err, &coder) {
+		return coder.Code(), true
+	}
+	return 0, false
+}
+
+// apiMessageRe pulls the first error message out of a Falcon error envelope
+// embedded in a generated error's text.
+var apiMessageRe = regexp.MustCompile(`"message":\s*"([^"]+)"`)
+
+// apiMessage returns the API's own error message, if the error carries one.
+func apiMessage(err error) string {
+	if m := apiMessageRe.FindStringSubmatch(err.Error()); len(m) == 2 {
+		return m[1]
+	}
+	return ""
 }
