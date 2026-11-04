@@ -28,6 +28,7 @@ import (
 
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
 	"github.com/crowdstrike/falcon-cli/pkg/output"
+	"github.com/crowdstrike/gofalcon/falcon/client/a_s_p_m"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_policies"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_security_assets"
 	"github.com/crowdstrike/gofalcon/falcon/client/container_images"
@@ -191,6 +192,48 @@ func runDoctor(f *factory.Factory, outputFmt string) error {
 				p := container_vulnerabilities.NewReadCombinedVulnerabilitiesParams()
 				p.Limit = &one
 				_, err := falconClient.ContainerVulnerabilities.ReadCombinedVulnerabilities(p)
+				return classifyErr(err)
+			},
+		},
+		{
+			Command: "aspm findings list",
+			Scope:   "Cloud Security API Assets: Read",
+			fn: func() probeStatus {
+				// We deliberately omit gcrn here, so a 400 (bad request) means
+				// the endpoint is reachable and authorized — treat it as OK.
+				// A 403 still means the scope is missing.
+				p := cloud_security_assets.NewCloudSecurityAssetsCombinedApplicationFindingsParams()
+				p.Type = "vulnerabilities"
+				p.Limit = &one
+				_, err := falconClient.CloudSecurityAssets.CloudSecurityAssetsCombinedApplicationFindings(p)
+				if st := classifyErr(err); st != probeError {
+					return st
+				}
+				// classifyErr only understands runtime.APIError; this endpoint
+				// returns a typed response error exposing Code(). A 400 here
+				// means reachable + authorized (we sent no gcrn), so treat it
+				// as OK; anything else stays an error.
+				if coder, ok := err.(interface{ Code() int }); ok && coder.Code() == 400 {
+					return probeOK
+				}
+				return probeError
+			},
+		},
+		{
+			Command: "aspm integrations / services",
+			Scope:   "ASPM Read-Only: Read",
+			fn: func() probeStatus {
+				p := a_s_p_m.NewGetIntegrationsParams()
+				_, err := falconClient.Aspm.GetIntegrations(p)
+				return classifyErr(err)
+			},
+		},
+		{
+			Command: "aspm integration-types list",
+			Scope:   "ASPM Admin: Read",
+			fn: func() probeStatus {
+				p := a_s_p_m.NewGetIntegrationTypesParams()
+				_, err := falconClient.Aspm.GetIntegrationTypes(p)
 				return classifyErr(err)
 			},
 		},
