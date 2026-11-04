@@ -20,6 +20,7 @@ falcon <command> <subcommand> [flags]
 | `falcon netscan` | Manage Network Vulnerability Assessment (NVA) resources |
 | `falcon fcs` | Manage Falcon Cloud Security resources |
 | `falcon aspm` | Application Security Posture Management (read-only) |
+| `falcon code-security` | Code Security SCM integration and inventory (read-only) |
 | `falcon version` | Display the CLI version |
 
 ## Authentication (`auth`)
@@ -112,7 +113,7 @@ Without the Real Time Response scope, `rtr sessions list` returns
 | `fcs policies ...` | Manage cloud security policies |
 | `fcs registration ...` | Cloud account registration |
 | `fcs cloud-groups list\|get\|create\|update\|delete` | Manage cloud groups (full CRUD with selectors) |
-| `fcs doctor` | Check which command groups your API scopes allow (FCS and ASPM) |
+| `fcs doctor` | Check which command groups your API scopes allow (FCS, ASPM, Code Security) |
 
 ## Application Security Posture Management (`aspm`)
 
@@ -127,6 +128,25 @@ Without the Real Time Response scope, `rtr sessions list` returns
 `aspm findings list` **requires** `--type` (e.g. `vulnerabilities`, `packages`,
 `datastore_access`) and `--gcrn` (or `--crn`): findings are scoped to one
 application and the API rejects an unscoped list.
+
+## Code Security (`code-security`, alias `codesec`)
+
+| Subcommand | Description | Scope |
+|------------|-------------|-------|
+| `code-security connections list [--provider <p>]` | SCM connections | Code Security Scm Integration: Read |
+| `code-security connections get --uuid <uuid>` | One SCM connection | Code Security Scm Integration: Read |
+| `code-security repositories list` | Repositories discovered through connections (`--filter`, `--sort name.asc`, `--limit`, `--offset`) | Code Security Scm Inventory: Read |
+| `code-security repositories branches --repository-id <id>` | Branches of one repository | Code Security Scm Inventory: Read |
+| `code-security repositories aggregate --field <f>` | Distinct values of a repository field, with counts | Code Security Scm Inventory: Read |
+| `code-security exclusions list --connection-id <uuid>` | Scan exclusion rules of a connection | Code Security Scm Integration: Read |
+| `code-security branch-configs get --connection-id <uuid> [--repository-ids <ids>]` | Which branches are scanned; inherited configs marked `source=inherited` | Code Security Scm Integration: Read |
+| `code-security pull-jobs get --id <id>` | Status of one repository pull job | Code Security Scm Inventory: Read |
+
+These commands are read-only. gofalcon types the SCM responses as untyped
+objects, so table columns are taken from the fields the API returns (common ones
+like `id` and `name` first, up to seven). Use `--output json` for full records, or
+`--columns` to pick any field. `repositories aggregate` rejects some fields with
+HTTP 400; `visibility` is known to work.
 
 ## Write safety: the `--confirm` gate
 

@@ -118,3 +118,54 @@ func StringifyResourceFields(fields ...string) func([]byte) ([]byte, error) {
 		return json.Marshal(env)
 	}
 }
+
+// CaptureBody returns a gofalcon ClientOption that copies a successful
+// response body into *dst before the SDK decodes it. Use it for endpoints
+// whose generated model is untyped or drifts from the live API, then decode
+// *dst yourself (see RawResources).
+func CaptureBody(dst *[]byte) func(*runtime.ClientOperation) {
+	return RewriteBody(func(b []byte) ([]byte, error) {
+		*dst = append((*dst)[:0], b...)
+		return b, nil
+	})
+}
+
+// RawResources decodes the "resources" member of a Falcon response envelope
+// as generic objects. It accepts an array of objects, a single object, or
+// null/absent (no rows). Non-object array items are wrapped as {"value": x}.
+func RawResources(body []byte, key string) ([]map[string]any, error) {
+	if key == "" {
+		key = "resources"
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return nil, nil
+	}
+	var env map[string]json.RawMessage
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, err
+	}
+	raw := bytes.TrimSpace(env[key])
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil, nil
+	}
+	if raw[0] == '{' {
+		var one map[string]any
+		if err := json.Unmarshal(raw, &one); err != nil {
+			return nil, err
+		}
+		return []map[string]any{one}, nil
+	}
+	var items []any
+	if err := json.Unmarshal(raw, &items); err != nil {
+		return nil, err
+	}
+	out := make([]map[string]any, 0, len(items))
+	for _, it := range items {
+		if m, ok := it.(map[string]any); ok {
+			out = append(out, m)
+		} else {
+			out = append(out, map[string]any{"value": it})
+		}
+	}
+	return out, nil
+}

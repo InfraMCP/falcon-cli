@@ -26,6 +26,7 @@ import (
 	"github.com/crowdstrike/falcon-cli/internal/version"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/aspm"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/auth"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/codesecurity"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/detections"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/hosts"
@@ -102,6 +103,7 @@ func NewCmdRoot(f *factory.Factory, _ string) *cobra.Command {
 	cmd.AddCommand(rtr.NewRTRCmd(f))
 	cmd.AddCommand(netscan.NewNetscanCmd(f))
 	cmd.AddCommand(aspm.NewASPMCmd(f))
+	cmd.AddCommand(codesecurity.NewCodeSecurityCmd(f))
 
 	utils.DisableAuthCheck(cmd)
 

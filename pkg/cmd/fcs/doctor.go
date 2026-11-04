@@ -32,6 +32,8 @@ import (
 	"github.com/crowdstrike/gofalcon/falcon/client/a_s_p_m"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_policies"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_security_assets"
+	"github.com/crowdstrike/gofalcon/falcon/client/code_security_scm_integration"
+	"github.com/crowdstrike/gofalcon/falcon/client/code_security_scm_inventory"
 	"github.com/crowdstrike/gofalcon/falcon/client/container_images"
 	"github.com/crowdstrike/gofalcon/falcon/client/container_vulnerabilities"
 	"github.com/crowdstrike/gofalcon/falcon/client/cspg_iacapi"
@@ -235,6 +237,25 @@ func runDoctor(f *factory.Factory, outputFmt string) error {
 			fn: func() probeStatus {
 				p := a_s_p_m.NewGetIntegrationTypesParams()
 				_, err := falconClient.Aspm.GetIntegrationTypes(p)
+				return classifyErr(err)
+			},
+		},
+		{
+			Command: "code-security connections / exclusions / branch-configs",
+			Scope:   "Code Security Scm Integration: Read",
+			fn: func() probeStatus {
+				p := code_security_scm_integration.NewListSCMConnectionsParams()
+				_, err := falconClient.CodeSecurityScmIntegration.ListSCMConnections(p)
+				return classifyErr(err)
+			},
+		},
+		{
+			Command: "code-security repositories / pull-jobs",
+			Scope:   "Code Security Scm Inventory: Read",
+			fn: func() probeStatus {
+				p := code_security_scm_inventory.NewListSCMRepositoriesParams()
+				p.Limit = &one
+				_, err := falconClient.CodeSecurityScmInventory.ListSCMRepositories(p)
 				return classifyErr(err)
 			},
 		},
