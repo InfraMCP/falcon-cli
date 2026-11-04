@@ -34,6 +34,7 @@ import (
 func NewCmdRulesDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete policy rules",
@@ -46,7 +47,7 @@ func NewCmdRulesDelete(f *factory.Factory) *cobra.Command {
             falcon fcs policies rules delete --ids <uuid1>,<uuid2>
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -56,6 +57,9 @@ func NewCmdRulesDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = client.CloudPolicies.DeleteRuleMixin0(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete policy rules")
 			}
 
@@ -65,5 +69,6 @@ func NewCmdRulesDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

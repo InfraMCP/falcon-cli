@@ -115,6 +115,7 @@ func newCmdAzureCreate(f *factory.Factory) *cobra.Command {
 		tenantID string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Register an Azure tenant",
@@ -124,7 +125,7 @@ func newCmdAzureCreate(f *factory.Factory) *cobra.Command {
             falcon fcs registration azure create --tenant-id <uuid>
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -138,6 +139,9 @@ func newCmdAzureCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudAzureRegistration.CloudRegistrationAzureCreateRegistration(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create Azure registration")
 			}
 
@@ -155,12 +159,14 @@ func newCmdAzureCreate(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.tenantID, "tenant-id", "", "Azure tenant ID (required)")
 	_ = cmd.MarkFlagRequired("tenant-id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdAzureDelete(f *factory.Factory) *cobra.Command {
 	var tenantIDs []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete Azure tenant registrations",
@@ -170,7 +176,7 @@ func newCmdAzureDelete(f *factory.Factory) *cobra.Command {
             falcon fcs registration azure delete --tenant-ids <uuid>
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -180,6 +186,9 @@ func newCmdAzureDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = client.CloudAzureRegistration.CloudRegistrationAzureDeleteRegistration(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete Azure registration")
 			}
 
@@ -190,5 +199,6 @@ func newCmdAzureDelete(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringSliceVar(&tenantIDs, "tenant-ids", nil, "Azure tenant IDs to delete (required)")
 	_ = cmd.MarkFlagRequired("tenant-ids")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

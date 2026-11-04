@@ -37,6 +37,7 @@ func NewCmdAWSUpdate(f *factory.Factory) *cobra.Command {
 		accountID string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an AWS account registration",
@@ -46,7 +47,7 @@ func NewCmdAWSUpdate(f *factory.Factory) *cobra.Command {
             falcon fcs registration aws update --account-id 123456789012
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -62,6 +63,9 @@ func NewCmdAWSUpdate(f *factory.Factory) *cobra.Command {
 
 			resp, _, err := client.CloudAwsRegistration.CloudRegistrationAwsUpdateAccount(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "update AWS account registration")
 			}
 
@@ -75,5 +79,6 @@ func NewCmdAWSUpdate(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.accountID, "account-id", "", "AWS account ID (required)")
 	_ = cmd.MarkFlagRequired("account-id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

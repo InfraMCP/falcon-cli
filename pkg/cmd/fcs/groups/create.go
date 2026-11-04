@@ -40,6 +40,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 		businessUnit string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a cloud group",
@@ -49,7 +50,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
             falcon fcs groups create --name "Production" --description "Production assets"
         `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			falconClient, err := f.FalconClient()
+			falconClient, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -75,6 +76,9 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 						"  Contact your Falcon admin to enable it for this CID.\n" +
 						"  Also ensure your API client has the 'Asset Groups: Write' scope")
 				}
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "CreateCloudGroupExternal")
 			}
 
@@ -90,5 +94,6 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.environment, "environment", "", "Environment label")
 	cmd.Flags().StringVar(&opts.businessUnit, "business-unit", "", "Business unit label")
 	_ = cmd.MarkFlagRequired("name")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

@@ -130,17 +130,17 @@ application and the API rejects an unscoped list.
 
 ## Write safety: the `--confirm` gate
 
-These mutating commands are **dry-run by default**: `hosts contain` /
+Every mutating command is **dry-run by default**: `hosts contain` /
 `lift-containment` / `hide` / `unhide`, `ioc create` / `delete`, the `netscan`
-create/update/delete actions, and `fcs cloud-groups create` / `update` / `delete`.
-Without `--confirm` the command prints the exact request it would send and exits
-without calling the API. Re-run the identical command with `--confirm` to execute.
+create/update/delete actions, and every `fcs` create/update/delete (`cloud-groups`,
+`groups`, `suppression`, `image-assessment`, `policies`, `registration`,
+`compliance controls`). Without `--confirm` the command prints the exact request it
+would send — method, path, query and body, with secrets redacted — and exits
+without sending it. Re-run the identical command with `--confirm` to execute.
 
-> [!WARNING]
-> The other `fcs` write commands — `fcs groups`, `fcs suppression`,
-> `fcs image-assessment`, `fcs policies`, `fcs registration` and
-> `fcs compliance controls` create/update/delete — have **no** `--confirm` gate
-> and call the API immediately.
+Reads a command needs before it writes (for example, fetching the current record)
+still run during a dry run; only the write is held back. A dry run of a pure
+write needs no credentials.
 
 ```bash
 # Dry run — prints the plan, calls nothing

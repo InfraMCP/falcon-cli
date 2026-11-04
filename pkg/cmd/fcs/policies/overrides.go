@@ -113,6 +113,7 @@ func newCmdOverridesCreate(f *factory.Factory) *cobra.Command {
 		details      string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a rule override",
@@ -121,7 +122,7 @@ func newCmdOverridesCreate(f *factory.Factory) *cobra.Command {
             falcon fcs policies overrides create --rule-id <uuid> --type disable --crn <crn> --target-region us-east-1 --reason "Not applicable" --comment "Dev account" --details "{}"
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -143,6 +144,9 @@ func newCmdOverridesCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudPolicies.CreateRuleOverride(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create rule override")
 			}
 
@@ -165,17 +169,19 @@ func newCmdOverridesCreate(f *factory.Factory) *cobra.Command {
 	_ = cmd.MarkFlagRequired("crn")
 	_ = cmd.MarkFlagRequired("reason")
 	_ = cmd.MarkFlagRequired("comment")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdOverridesDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete rule overrides",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -185,6 +191,9 @@ func newCmdOverridesDelete(f *factory.Factory) *cobra.Command {
 
 			_, _, err = client.CloudPolicies.DeleteRuleOverride(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete rule overrides")
 			}
 
@@ -194,5 +203,6 @@ func newCmdOverridesDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

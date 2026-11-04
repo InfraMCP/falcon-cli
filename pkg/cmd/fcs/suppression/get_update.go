@@ -82,6 +82,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		suppressionExpirationDate string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a suppression rule",
@@ -94,7 +95,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
             falcon fcs suppression update --id <id> --expiration-date 2025-12-31
         `),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -121,6 +122,9 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudPolicies.UpdateSuppressionRule(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "update suppression rule")
 			}
 
@@ -138,5 +142,6 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.suppressionReason, "reason", "", "Suppression reason")
 	cmd.Flags().StringVar(&opts.suppressionExpirationDate, "expiration-date", "", "Expiration date (YYYY-MM-DD)")
 	_ = cmd.MarkFlagRequired("id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

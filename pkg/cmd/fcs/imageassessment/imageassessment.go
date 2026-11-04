@@ -121,6 +121,7 @@ func newCmdPoliciesCreate(f *factory.Factory) *cobra.Command {
 		description string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an image assessment policy",
@@ -129,7 +130,7 @@ func newCmdPoliciesCreate(f *factory.Factory) *cobra.Command {
             falcon fcs image-assessment create --name "Production Images" --description "Policy for prod"
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -142,6 +143,9 @@ func newCmdPoliciesCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.ImageAssessmentPolicies.CreatePolicies(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create image assessment policy")
 			}
 
@@ -156,6 +160,7 @@ func newCmdPoliciesCreate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.name, "name", "", "Policy name (required)")
 	cmd.Flags().StringVar(&opts.description, "description", "", "Policy description")
 	_ = cmd.MarkFlagRequired("name")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
@@ -167,6 +172,7 @@ func newCmdPoliciesUpdate(f *factory.Factory) *cobra.Command {
 		enabled     bool
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an image assessment policy",
@@ -178,7 +184,7 @@ func newCmdPoliciesUpdate(f *factory.Factory) *cobra.Command {
             falcon fcs image-assessment update --id <uuid> --name "New Name"
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -193,6 +199,9 @@ func newCmdPoliciesUpdate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.ImageAssessmentPolicies.UpdatePolicies(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "update image assessment policy")
 			}
 
@@ -209,17 +218,19 @@ func newCmdPoliciesUpdate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.description, "description", "", "Policy description")
 	cmd.Flags().BoolVar(&opts.enabled, "enabled", true, "Whether the policy is enabled")
 	_ = cmd.MarkFlagRequired("id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdPoliciesDelete(f *factory.Factory) *cobra.Command {
 	var id string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete an image assessment policy",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -229,6 +240,9 @@ func newCmdPoliciesDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = client.ImageAssessmentPolicies.DeletePolicy(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete image assessment policy")
 			}
 
@@ -239,6 +253,7 @@ func newCmdPoliciesDelete(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&id, "id", "", "Policy UUID to delete (required)")
 	_ = cmd.MarkFlagRequired("id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
