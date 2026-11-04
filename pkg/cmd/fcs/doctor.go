@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs/iac"
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
 	"github.com/crowdstrike/falcon-cli/pkg/output"
 	"github.com/crowdstrike/gofalcon/falcon/client/a_s_p_m"
@@ -141,7 +142,7 @@ func runDoctor(f *factory.Factory, outputFmt string) error {
 			fn: func() probeStatus {
 				p := cspg_iacapi.NewCombinedDetectionsParams()
 				p.Limit = &one
-				_, err := falconClient.CspgIacapi.CombinedDetections(p)
+				_, err := falconClient.CspgIacapi.CombinedDetections(p, iac.ProbeOption())
 				return classifyErr(err)
 			},
 		},

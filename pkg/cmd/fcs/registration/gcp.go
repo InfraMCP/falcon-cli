@@ -93,7 +93,7 @@ func newCmdGCPList(f *factory.Factory) *cobra.Command {
 			params := cspm_registration.NewGetCSPMGCPAccountParams()
 			params.Limit = &limit
 
-			resp, _, err := client.CspmRegistration.GetCSPMGCPAccount(params)
+			resp, _, err := client.CspmRegistration.GetCSPMGCPAccount(params) //nolint:staticcheck // deprecated in gofalcon v0.24.0; migrate separately
 			if err != nil {
 				return cmdutil.HandleAPIError(err, "list GCP registrations")
 			}

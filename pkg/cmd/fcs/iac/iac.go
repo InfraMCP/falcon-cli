@@ -21,7 +21,6 @@
 package iac
 
 import (
-	"github.com/crowdstrike/falcon-cli/pkg/cmdutil"
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -45,5 +44,3 @@ func NewIACCmd(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdList(f))
 	return cmd
 }
-
-func strp(p *string) string { return cmdutil.Deref(p) }
