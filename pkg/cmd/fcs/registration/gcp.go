@@ -118,6 +118,7 @@ func newCmdGCPCreate(f *factory.Factory) *cobra.Command {
 		deploymentMethod string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Register a GCP project",
@@ -127,7 +128,7 @@ func newCmdGCPCreate(f *factory.Factory) *cobra.Command {
             falcon fcs registration gcp create --entity-id <project-number> --infra-project-id <project-id> --deployment-method service_account
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -145,6 +146,9 @@ func newCmdGCPCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudGoogleCloudRegistration.CloudRegistrationGcpCreateRegistration(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create GCP registration")
 			}
 
@@ -160,18 +164,20 @@ func newCmdGCPCreate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.deploymentMethod, "deployment-method", "service_account", "Deployment method (service_account, workload_identity)")
 	_ = cmd.MarkFlagRequired("entity-id")
 	_ = cmd.MarkFlagRequired("infra-project-id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdGCPDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete GCP registrations",
 		Long:  templates.LongDesc(`Delete one or more GCP registrations from Falcon Cloud Security.`),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -182,6 +188,9 @@ func newCmdGCPDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = client.CloudGoogleCloudRegistration.CloudRegistrationGcpDeleteRegistration(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete GCP registration")
 			}
 
@@ -191,5 +200,6 @@ func newCmdGCPDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

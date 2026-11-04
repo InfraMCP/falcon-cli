@@ -42,6 +42,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 		ruleSelectionType string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a suppression rule",
@@ -51,7 +52,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
             falcon fcs suppression create --name "My Rule" --description "Suppress false positives"
         `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			falconClient, err := f.FalconClient()
+			falconClient, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -69,6 +70,9 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := falconClient.CloudPolicies.CreateSuppressionRule(p)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "CreateSuppressionRule")
 			}
 
@@ -87,5 +91,6 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.suppressionReason, "reason", "false_positive", "Suppression reason: false_positive, accepted_risk")
 	cmd.Flags().StringVar(&opts.ruleSelectionType, "rule-selection-type", "rule_selection_filter", "Rule selection type")
 	_ = cmd.MarkFlagRequired("name")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

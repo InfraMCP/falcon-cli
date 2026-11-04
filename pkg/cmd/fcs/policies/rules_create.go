@@ -43,6 +43,7 @@ func NewCmdRulesCreate(f *factory.Factory) *cobra.Command {
 		logic       string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a policy rule",
@@ -52,7 +53,7 @@ func NewCmdRulesCreate(f *factory.Factory) *cobra.Command {
             falcon fcs policies rules create --name "My Custom Rule" --description "Checks for X" --provider AWS --domain CSPM --logic "resource.public == true"
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -73,6 +74,9 @@ func NewCmdRulesCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudPolicies.CreateRuleMixin0(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create policy rule")
 			}
 
@@ -92,5 +96,6 @@ func NewCmdRulesCreate(f *factory.Factory) *cobra.Command {
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("description")
 	_ = cmd.MarkFlagRequired("provider")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

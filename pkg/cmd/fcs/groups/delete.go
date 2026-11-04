@@ -33,6 +33,7 @@ import (
 func NewCmdDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete cloud groups",
@@ -42,7 +43,7 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
             falcon fcs groups delete --ids <id>
         `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			falconClient, err := f.FalconClient()
+			falconClient, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -52,6 +53,9 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = falconClient.CloudSecurity.DeleteCloudGroupsExternal(p)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "DeleteCloudGroupsExternal")
 			}
 
@@ -61,5 +65,6 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

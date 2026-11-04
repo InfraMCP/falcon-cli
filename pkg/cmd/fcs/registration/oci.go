@@ -113,6 +113,7 @@ func newCmdOCICreate(f *factory.Factory) *cobra.Command {
 		userEmail   string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Register an OCI tenancy",
@@ -122,7 +123,7 @@ func newCmdOCICreate(f *factory.Factory) *cobra.Command {
             falcon fcs registration oci create --tenancy-ocid <ocid> --home-region us-ashburn-1 --user-email admin@example.com
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -141,6 +142,9 @@ func newCmdOCICreate(f *factory.Factory) *cobra.Command {
 
 			resp, _, err := client.CloudOciRegistration.CloudSecurityRegistrationOciCreateAccount(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create OCI registration")
 			}
 
@@ -162,18 +166,20 @@ func newCmdOCICreate(f *factory.Factory) *cobra.Command {
 	_ = cmd.MarkFlagRequired("tenancy-ocid")
 	_ = cmd.MarkFlagRequired("home-region")
 	_ = cmd.MarkFlagRequired("user-email")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdOCIDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete OCI registrations",
 		Long:  templates.LongDesc(`Delete one or more OCI tenancy registrations from Falcon Cloud Security.`),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -183,6 +189,9 @@ func newCmdOCIDelete(f *factory.Factory) *cobra.Command {
 
 			_, _, err = client.CloudOciRegistration.CloudSecurityRegistrationOciDeleteAccount(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete OCI registration")
 			}
 
@@ -192,5 +201,6 @@ func newCmdOCIDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

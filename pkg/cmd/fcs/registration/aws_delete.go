@@ -34,6 +34,7 @@ import (
 func NewCmdAWSDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete AWS account registrations",
@@ -43,7 +44,7 @@ func NewCmdAWSDelete(f *factory.Factory) *cobra.Command {
             falcon fcs registration aws delete --ids 123456789012
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -53,6 +54,9 @@ func NewCmdAWSDelete(f *factory.Factory) *cobra.Command {
 
 			_, _, err = client.CloudAwsRegistration.CloudRegistrationAwsDeleteAccount(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete AWS account registration")
 			}
 
@@ -62,5 +66,6 @@ func NewCmdAWSDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

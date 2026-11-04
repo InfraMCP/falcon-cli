@@ -41,6 +41,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		businessUnit string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a cloud group",
@@ -50,7 +51,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
             falcon fcs groups update --id <id> --name "New Name"
         `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			falconClient, err := f.FalconClient()
+			falconClient, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -71,6 +72,9 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 						"  Feature flag fcs-fga-cloud-groups-external-endpoints may be disabled for this CID.\n" +
 						"  Also ensure your API client has the 'Asset Groups: Write' scope")
 				}
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "UpdateCloudGroupExternal")
 			}
 
@@ -87,5 +91,6 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.environment, "environment", "", "New environment")
 	cmd.Flags().StringVar(&opts.businessUnit, "business-unit", "", "New business unit")
 	_ = cmd.MarkFlagRequired("id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

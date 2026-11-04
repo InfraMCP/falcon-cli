@@ -178,6 +178,7 @@ func newCmdControlsCreate(f *factory.Factory) *cobra.Command {
 		sectionName string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a compliance control",
@@ -186,7 +187,7 @@ func newCmdControlsCreate(f *factory.Factory) *cobra.Command {
             falcon fcs compliance controls create --name "Encryption at rest" --framework-id <uuid> --section-name "Data Protection"
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -201,6 +202,9 @@ func newCmdControlsCreate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudPolicies.CreateComplianceControl(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create compliance control")
 			}
 
@@ -219,17 +223,19 @@ func newCmdControlsCreate(f *factory.Factory) *cobra.Command {
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("framework-id")
 	_ = cmd.MarkFlagRequired("section-name")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
 
 func newCmdControlsDelete(f *factory.Factory) *cobra.Command {
 	var ids []string
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete compliance controls",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -239,6 +245,9 @@ func newCmdControlsDelete(f *factory.Factory) *cobra.Command {
 
 			_, err = client.CloudPolicies.DeleteComplianceControl(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "delete compliance controls")
 			}
 
@@ -248,5 +257,6 @@ func newCmdControlsDelete(f *factory.Factory) *cobra.Command {
 	}
 
 	cmdutil.AddIDsFlag(cmd, &ids, true)
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

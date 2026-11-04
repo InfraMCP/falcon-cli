@@ -40,6 +40,7 @@ func NewCmdRulesUpdate(f *factory.Factory) *cobra.Command {
 		severity    int64
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a policy rule",
@@ -52,7 +53,7 @@ func NewCmdRulesUpdate(f *factory.Factory) *cobra.Command {
             falcon fcs policies rules update --id <uuid> --name "Updated Name" --description "New desc"
         `),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -76,6 +77,9 @@ func NewCmdRulesUpdate(f *factory.Factory) *cobra.Command {
 
 			resp, err := client.CloudPolicies.UpdateRule(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "update policy rule")
 			}
 
@@ -92,5 +96,6 @@ func NewCmdRulesUpdate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.description, "description", "", "New rule description")
 	cmd.Flags().Int64Var(&opts.severity, "severity", 0, "New severity level (1=Informational, 2=Medium, 3=High, 4=Critical)")
 	_ = cmd.MarkFlagRequired("id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }

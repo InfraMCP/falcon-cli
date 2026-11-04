@@ -38,6 +38,7 @@ func NewCmdAWSCreate(f *factory.Factory) *cobra.Command {
 		accountType string
 	}{}
 
+	var confirm bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Register an AWS account",
@@ -50,7 +51,7 @@ func NewCmdAWSCreate(f *factory.Factory) *cobra.Command {
             falcon fcs registration aws create --account-id 123456789012 --account-type organization
         `),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			client, err := f.FalconClient()
+			client, dry, err := cmdutil.WriteClient(confirm, f.FalconClient)
 			if err != nil {
 				return err
 			}
@@ -67,6 +68,9 @@ func NewCmdAWSCreate(f *factory.Factory) *cobra.Command {
 
 			resp, _, err := client.CloudAwsRegistration.CloudRegistrationAwsCreateAccount(params)
 			if err != nil {
+				if dry.Intercepted(err) {
+					return dry.Print(f.IOStreams.Out)
+				}
 				return cmdutil.HandleAPIError(err, "create AWS account registration")
 			}
 
@@ -81,5 +85,6 @@ func NewCmdAWSCreate(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.accountID, "account-id", "", "AWS account ID (required)")
 	cmd.Flags().StringVar(&opts.accountType, "account-type", "single", "Account type (single, organization)")
 	_ = cmd.MarkFlagRequired("account-id")
+	cmdutil.AddConfirmFlag(cmd, &confirm)
 	return cmd
 }
