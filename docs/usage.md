@@ -47,8 +47,6 @@ falcon <command> <subcommand> [flags]
 | `detections get` | Get detection details | Alerts: Read |
 | `detections aggregate` | Aggregate detections | Alerts: Read |
 
-Updating detection status requires Alerts: Write.
-
 ## Threat Intelligence (`intel`)
 
 | Subcommand | Description |
