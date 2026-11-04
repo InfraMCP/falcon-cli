@@ -96,7 +96,10 @@ func runList(opts *listOptions) error {
 		params.Sort = &opts.Sort
 	}
 
-	resp, err := client.CloudSecurity.CombinedCloudRisks(params)
+	// gofalcon v0.24.0 types remediation_plan and risk_summary as strings, but
+	// the live API returns objects; re-encode them as JSON strings so decoding succeeds.
+	resp, err := client.CloudSecurity.CombinedCloudRisks(params,
+		cmdutil.RewriteBody(cmdutil.StringifyResourceFields("remediation_plan", "risk_summary")))
 	if err != nil {
 		return cmdutil.HandleAPIError(err, "list cloud risks")
 	}

@@ -92,7 +92,7 @@ func newCmdAzureList(f *factory.Factory) *cobra.Command {
 			params := cspm_registration.NewGetCSPMAzureAccountParams()
 			params.Limit = &limit
 
-			resp, _, err := client.CspmRegistration.GetCSPMAzureAccount(params)
+			resp, _, err := client.CspmRegistration.GetCSPMAzureAccount(params) //nolint:staticcheck // deprecated in gofalcon v0.24.0; migrate separately
 			if err != nil {
 				return cmdutil.HandleAPIError(err, "list Azure registrations")
 			}

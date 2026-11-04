@@ -27,7 +27,6 @@ import (
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
 	"github.com/crowdstrike/falcon-cli/pkg/output"
 	"github.com/crowdstrike/gofalcon/falcon/client/cspg_iacapi"
-	"github.com/crowdstrike/gofalcon/falcon/models"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )
@@ -35,8 +34,8 @@ import (
 var iacTableDef = &output.TableDefinition{
 	Headers: []string{"DETECTION_ID", "RESOURCE_TYPE", "FILE", "LINE", "RULE_ID", "LAST_DETECTED"},
 	RowFunc: func(item any) []string {
-		r, ok := item.(*models.ModelsAPIDetectionResponse)
-		if !ok {
+		r, ok := item.(*iacDetection)
+		if !ok || r == nil {
 			return nil
 		}
 		line := ""
@@ -45,13 +44,13 @@ var iacTableDef = &output.TableDefinition{
 		}
 		ruleID := ""
 		if r.Rule != nil {
-			ruleID = strp(r.Rule.RuleUUID)
+			ruleID = r.Rule.RuleUUID
 		}
-		lastDetected := ""
-		if r.LastDetected != nil {
-			lastDetected = r.LastDetected.String()[:10]
+		lastDetected := r.LastDetected
+		if len(lastDetected) > 10 {
+			lastDetected = lastDetected[:10]
 		}
-		return []string{strp(r.DetectionUUID), strp(r.ResourceType), strp(r.FileName), line, ruleID, lastDetected}
+		return []string{r.DetectionUUID, r.ResourceType, r.FileName, line, ruleID, lastDetected}
 	},
 }
 
@@ -95,12 +94,16 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				p.Offset = &opts.offset
 			}
 
-			resp, err := falconClient.CspgIacapi.CombinedDetections(p)
-			if err != nil {
+			var decoded *iacResponse
+			if _, err := falconClient.CspgIacapi.CombinedDetections(p, withDetectionsReader(&decoded)); err != nil {
 				return cmdutil.HandleAPIError(err, "CombinedDetections")
 			}
 
-			resources := output.FilterAndSort(resp.Payload.Resources, iacTableDef, opts.Client.ToFilterOptions())
+			var items []*iacDetection
+			if decoded != nil {
+				items = decoded.Resources
+			}
+			resources := output.FilterAndSort(items, iacTableDef, opts.Client.ToFilterOptions())
 			tableOpts := opts.Table.ToOutputTableOptions()
 			printer := output.NewPrinter(output.Format(opts.out), iacTableDef, tableOpts)
 			return printer.Print(f.IOStreams.Out, resources)

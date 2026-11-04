@@ -135,7 +135,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
 			dp := alerts.NewPostEntitiesAlertsV1Params()
 			dp.Body = &models.DetectsapiPostEntitiesAlertsV1Request{Ids: ids}
-			dResp, err := falconClient.Alerts.PostEntitiesAlertsV1(dp)
+			dResp, err := falconClient.Alerts.PostEntitiesAlertsV1(dp) //nolint:staticcheck // deprecated in gofalcon v0.24.0; migrate separately
 			if err != nil {
 				return cmdutil.HandleAPIError(err, "PostEntitiesAlertsV1")
 			}

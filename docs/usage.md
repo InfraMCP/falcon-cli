@@ -19,6 +19,7 @@ falcon <command> <subcommand> [flags]
 | `falcon rtr` | Real Time Response (read-only triage) |
 | `falcon netscan` | Manage Network Vulnerability Assessment (NVA) resources |
 | `falcon fcs` | Manage Falcon Cloud Security resources |
+| `falcon aspm` | Application Security Posture Management (read-only) |
 | `falcon version` | Display the CLI version |
 
 ## Authentication (`auth`)
@@ -45,8 +46,6 @@ falcon <command> <subcommand> [flags]
 | `detections list` | List detections (alerts) | Alerts: Read |
 | `detections get` | Get detection details | Alerts: Read |
 | `detections aggregate` | Aggregate detections | Alerts: Read |
-
-Updating detection status requires Alerts: Write.
 
 ## Threat Intelligence (`intel`)
 
@@ -112,15 +111,36 @@ Without the Real Time Response scope, `rtr sessions list` returns
 | `fcs suppression list\|create\|delete` | Manage suppression rules |
 | `fcs policies ...` | Manage cloud security policies |
 | `fcs registration ...` | Cloud account registration |
-| `fcs doctor` | Check which FCS command groups your API scopes allow |
+| `fcs cloud-groups list\|get\|create\|update\|delete` | Manage cloud groups (full CRUD with selectors) |
+| `fcs doctor` | Check which command groups your API scopes allow (FCS and ASPM) |
+
+## Application Security Posture Management (`aspm`)
+
+| Subcommand | Description | Scope |
+|------------|-------------|-------|
+| `aspm findings list --type <t> --gcrn <gcrn>` | Application-security findings for one application | Cloud Security API Assets: Read |
+| `aspm integrations list` | Configured ASPM integrations | ASPM Read-Only: Read |
+| `aspm integration-types list` | Available integration types and their IDs | ASPM Admin: Read |
+| `aspm services violation-types` | Violation categories and types | ASPM Read-Only: Read |
+| `aspm tags list` | ASPM tags and how many services use each | ASPM Read-Only: Read |
+
+`aspm findings list` **requires** `--type` (e.g. `vulnerabilities`, `packages`,
+`datastore_access`) and `--gcrn` (or `--crn`): findings are scoped to one
+application and the API rejects an unscoped list.
 
 ## Write safety: the `--confirm` gate
 
-Mutating commands — `hosts contain`/`lift-containment`/`hide`/`unhide`,
-`ioc create`/`delete`, detection status updates, the `netscan` create/update/delete
-actions, and the `fcs groups`/`suppression` writes — are **dry-run by default**.
+These mutating commands are **dry-run by default**: `hosts contain` /
+`lift-containment` / `hide` / `unhide`, `ioc create` / `delete`, the `netscan`
+create/update/delete actions, and `fcs cloud-groups create` / `update` / `delete`.
 Without `--confirm` the command prints the exact request it would send and exits
 without calling the API. Re-run the identical command with `--confirm` to execute.
+
+> [!WARNING]
+> The other `fcs` write commands — `fcs groups`, `fcs suppression`,
+> `fcs image-assessment`, `fcs policies`, `fcs registration` and
+> `fcs compliance controls` create/update/delete — have **no** `--confirm` gate
+> and call the API immediately.
 
 ```bash
 # Dry run — prints the plan, calls nothing

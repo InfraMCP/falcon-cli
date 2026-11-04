@@ -32,7 +32,7 @@ import (
 func TestNewASPMCmd_Wiring(t *testing.T) {
 	cmd := NewASPMCmd(&factory.Factory{})
 	testutil.AssertHasSubcommands(t, testutil.SubcommandNames(cmd),
-		[]string{"findings", "integrations", "integration-types", "services"})
+		[]string{"findings", "integrations", "integration-types", "services", "tags"})
 }
 
 func TestFindingsTableDef_RowFunc(t *testing.T) {

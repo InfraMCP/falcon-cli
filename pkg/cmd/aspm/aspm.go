@@ -57,5 +57,6 @@ func NewASPMCmd(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdIntegrations(f))
 	cmd.AddCommand(NewCmdIntegrationTypes(f))
 	cmd.AddCommand(NewCmdServices(f))
+	cmd.AddCommand(NewCmdTags(f))
 	return cmd
 }
