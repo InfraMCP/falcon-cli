@@ -176,9 +176,10 @@ Every mutating command is **dry-run by default**: `hosts contain` /
 `lift-containment` / `hide` / `unhide`, `ioc create` / `delete`, the `netscan`
 create/update/delete actions, and every `fcs` create/update/delete (`cloud-groups`,
 `groups`, `suppression`, `image-assessment`, `policies`, `registration`,
-`compliance controls`), and the `cases` create/update/comment/assign/evidence writes. Without `--confirm` the command prints the exact request it
-would send — method, path, query and body, with secrets redacted — and exits
-without sending it. Re-run the identical command with `--confirm` to execute.
+`compliance controls`), and the `cases` create/update/comment/assign/evidence
+writes. Without `--confirm` the command prints the exact request it would send —
+method, path, query and body, with secrets redacted — and exits without sending
+it. Re-run the identical command with `--confirm` to execute.
 
 Reads a command needs before it writes (for example, fetching the current record)
 still run during a dry run; only the write is held back. A dry run of a pure
