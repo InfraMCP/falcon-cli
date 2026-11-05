@@ -21,6 +21,7 @@ falcon <command> <subcommand> [flags]
 | `falcon fcs` | Manage Falcon Cloud Security resources |
 | `falcon aspm` | Application Security Posture Management (read-only) |
 | `falcon code-security` | Code Security SCM integration and inventory (read-only) |
+| `falcon cases` | Falcon case management (list/get read; create/update/comment/assign/evidence gated) |
 | `falcon version` | Display the CLI version |
 
 ## Authentication (`auth`)
@@ -113,7 +114,7 @@ Without the Real Time Response scope, `rtr sessions list` returns
 | `fcs policies ...` | Manage cloud security policies |
 | `fcs registration ...` | Cloud account registration |
 | `fcs cloud-groups list\|get\|create\|update\|delete` | Manage cloud groups (full CRUD with selectors) |
-| `fcs doctor` | Check which command groups your API scopes allow (FCS, ASPM, Code Security) |
+| `fcs doctor` | Check which command groups your API scopes allow (FCS, ASPM, Code Security, Cases) |
 
 ## Application Security Posture Management (`aspm`)
 
@@ -148,13 +149,34 @@ like `id` and `name` first, up to seven). Use `--output json` for full records, 
 `--columns` to pick any field. `repositories aggregate` rejects some fields with
 HTTP 400; `visibility` is known to work.
 
+## Cases (`cases`)
+
+| Subcommand | Description | Scope |
+|------------|-------------|-------|
+| `cases list [--filter <FQL> --q <text> --sort field.dir --limit --offset]` | List cases (full detail) | Case Management: Read |
+| `cases get --ids <id[,id]>` | Get cases by ID | Case Management: Read |
+| `cases create --name --description --severity <lvl> [--status --assignee --assignee-group --tag --description-format]` | Create a case | Case Management: Write |
+| `cases update --id [--name --description --severity --status --assignee]` | Change a case's fields | Case Management: Write |
+| `cases comment --id --body` | Append a timestamped note to the case description | Case Management: Write |
+| `cases assign --id --assignee <uuid>` | Assign a case to a user | Case Management: Write |
+| `cases evidence add --id --name --type` | Attach a custom evidence item (e.g. a resource CRN) | Case Management: Write |
+
+A case is the closest Falcon equivalent to recording triage of a Cloud Security
+finding: the Cloud Security risk API is read-only (it cannot be commented on or
+assigned), so the write-up lives in a case (or an external ticket). `--severity`
+is one of `informational`, `low`, `medium`, `high`, `critical`.
+
+There is no case comment endpoint, so `cases comment` appends the note to the
+case's markdown description under a `---` rule. All `cases` writes are dry-run by
+default; add `--confirm` to execute.
+
 ## Write safety: the `--confirm` gate
 
 Every mutating command is **dry-run by default**: `hosts contain` /
 `lift-containment` / `hide` / `unhide`, `ioc create` / `delete`, the `netscan`
 create/update/delete actions, and every `fcs` create/update/delete (`cloud-groups`,
 `groups`, `suppression`, `image-assessment`, `policies`, `registration`,
-`compliance controls`). Without `--confirm` the command prints the exact request it
+`compliance controls`), and the `cases` create/update/comment/assign/evidence writes. Without `--confirm` the command prints the exact request it
 would send — method, path, query and body, with secrets redacted — and exits
 without sending it. Re-run the identical command with `--confirm` to execute.
 

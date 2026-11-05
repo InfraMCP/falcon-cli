@@ -26,6 +26,7 @@ import (
 	"github.com/crowdstrike/falcon-cli/internal/version"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/aspm"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/auth"
+	"github.com/crowdstrike/falcon-cli/pkg/cmd/cases"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/codesecurity"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/detections"
 	"github.com/crowdstrike/falcon-cli/pkg/cmd/fcs"
@@ -104,6 +105,7 @@ func NewCmdRoot(f *factory.Factory, _ string) *cobra.Command {
 	cmd.AddCommand(netscan.NewNetscanCmd(f))
 	cmd.AddCommand(aspm.NewASPMCmd(f))
 	cmd.AddCommand(codesecurity.NewCodeSecurityCmd(f))
+	cmd.AddCommand(cases.NewCasesCmd(f))
 
 	utils.DisableAuthCheck(cmd)
 
@@ -112,7 +114,7 @@ func NewCmdRoot(f *factory.Factory, _ string) *cobra.Command {
 
 func runRoot(cmd *cobra.Command, opts *Options) error {
 	if cmd.Flags().Changed("version") {
-		_, err := fmt.Fprint(opts.IO.Out, version.Version)
+		_, err := fmt.Fprintln(opts.IO.Out, version.Version)
 		return err
 	}
 
