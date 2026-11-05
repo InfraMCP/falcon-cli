@@ -30,6 +30,7 @@ import (
 	"github.com/crowdstrike/falcon-cli/pkg/factory"
 	"github.com/crowdstrike/falcon-cli/pkg/output"
 	"github.com/crowdstrike/gofalcon/falcon/client/a_s_p_m"
+	"github.com/crowdstrike/gofalcon/falcon/client/cases"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_policies"
 	"github.com/crowdstrike/gofalcon/falcon/client/cloud_security_assets"
 	"github.com/crowdstrike/gofalcon/falcon/client/code_security_scm_integration"
@@ -256,6 +257,16 @@ func runDoctor(f *factory.Factory, outputFmt string) error {
 				p := code_security_scm_inventory.NewListSCMRepositoriesParams()
 				p.Limit = &one
 				_, err := falconClient.CodeSecurityScmInventory.ListSCMRepositories(p)
+				return classifyErr(err)
+			},
+		},
+		{
+			Command: "cases list / get / create",
+			Scope:   "Case Management: Read",
+			fn: func() probeStatus {
+				p := cases.NewQueriesCasesGetV1Params()
+				p.Limit = &one
+				_, err := falconClient.Cases.QueriesCasesGetV1(p)
 				return classifyErr(err)
 			},
 		},

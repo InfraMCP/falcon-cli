@@ -54,7 +54,7 @@ func NewCmdVersion(f *factory.Factory) *cobra.Command {
 
 func runVer(f *factory.Factory) func(cmd *cobra.Command, args []string) error {
 	return func(_ *cobra.Command, _ []string) error {
-		fmt.Fprint(f.IOStreams.Out, version.Version)
+		fmt.Fprintf(f.IOStreams.Out, "falcon %s (%s)\n", version.Version, version.Commit)
 		return nil
 	}
 }
